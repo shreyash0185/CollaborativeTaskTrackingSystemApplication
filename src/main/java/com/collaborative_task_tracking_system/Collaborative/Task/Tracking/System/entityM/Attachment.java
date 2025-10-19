@@ -1,4 +1,4 @@
-package com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.entity;
+package com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.entityM;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
