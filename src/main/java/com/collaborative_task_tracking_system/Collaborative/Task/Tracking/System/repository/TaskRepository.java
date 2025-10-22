@@ -13,4 +13,6 @@ public interface TaskRepository extends MongoRepository<Task, String> {
     List<Task> findByStatus(String status);
     List<Task> findByAssignedTo(String assignedTo);
     List<Task> findByTaskNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title, String description);
+    List<Task> findByProjectProjectId(String projectId);
+    List<Task> findByProjectTeamTeamId(String teamId);
 }

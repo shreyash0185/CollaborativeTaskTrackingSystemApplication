@@ -13,5 +13,5 @@ public interface TaskService {
     public void deleteTask(String taskId );
     public List<TaskResponse> searchTasks(String keyword);
     public List<TaskResponse> getTasksForUser(String userEmail);
-
+    public List<TaskResponse> getTasksByProject(String projectId);
 }

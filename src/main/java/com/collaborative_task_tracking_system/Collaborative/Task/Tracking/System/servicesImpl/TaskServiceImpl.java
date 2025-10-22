@@ -3,8 +3,12 @@ package com.collaborative_task_tracking_system.Collaborative.Task.Tracking.Syste
 import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.Exception.ResourceNotFoundException;
 import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.dtos.TaskRequest;
 import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.dtos.TaskResponse;
+import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.entityM.Project;
 import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.entityM.Task;
+import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.entityM.User;
+import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.repository.ProjectRepository;
 import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.repository.TaskRepository;
+import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.repository.TeamRepository;
 import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.repository.UserRepository;
 import com.collaborative_task_tracking_system.Collaborative.Task.Tracking.System.services.TaskService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +31,35 @@ public class TaskServiceImpl implements TaskService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
+
     @Override
     // Create new task
     @CacheEvict(value = "tasks", allEntries = true)
     public TaskResponse createTask(TaskRequest taskRequest , String createdByEmail) {
+
+        User creator = userRepository.findByEmail(createdByEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // 1️⃣ Validate Project
+        Project project = projectRepository.findById(taskRequest.getProjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        // 2️⃣ Validate Team Membership
+        boolean isTeamMember = teamRepository.findById(project.getTeamId())
+                .map(team -> team.getUserIds().contains(creator.getId()))
+                .orElse(false);
+
+        if (!isTeamMember) {
+            throw new IllegalStateException("You are not part of this project's team");
+        }
+
+
+
         log.info("Creating new task with title: {}", createdByEmail);
         Task task = new Task();
         task.setTaskName(taskRequest.getTaskTitle());
@@ -47,6 +76,29 @@ public class TaskServiceImpl implements TaskService {
         return mapTpoTaskResponse(savedTask);
 
     }
+
+    @Override
+    public List<TaskResponse> getTasksByProject(String projectId) {
+        List<Task> tasks = taskRepository.findByProjectId(projectId);
+        return tasks.stream().map(this::mapTpoTaskResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TaskResponse> getTasksByTeam(String teamId) {
+        List<Project> projects = projectRepository.findByTeamId(teamId);
+        if (projects.isEmpty()) {
+            throw new ResourceNotFoundException("No projects found for team ID: " + teamId);
+        }
+
+        List<String> projectIds = projects.stream()
+                .map(Project::getId)
+                .collect(Collectors.toList());
+
+        List<Task> tasks = taskRepository.findByProjectIdIn(projectIds);
+        return tasks.stream().map(this::mapTpoTaskResponse).collect(Collectors.toList());
+    }
+
+
 
 
 
@@ -113,5 +165,13 @@ public class TaskServiceImpl implements TaskService {
                 String.valueOf(task.getProjectId()),
                 task.getCreatedAt()
         );
+    }
+
+    public TaskRepository getTaskRepository() {
+        return taskRepository;
+    }
+
+    public void setTaskRepository(TaskRepository taskRepository) {
+        this.taskRepository = taskRepository;
     }
 }

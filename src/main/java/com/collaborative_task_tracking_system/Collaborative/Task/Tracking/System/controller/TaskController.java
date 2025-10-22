@@ -51,4 +51,15 @@ public class TaskController {
         return ResponseEntity.ok(taskService.searchTasks(keyword));
     }
 
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<TaskResponse>> getTasksByProject(@PathVariable String projectId) {
+        return ResponseEntity.ok(taskService.getTasksByProject(projectId));
+    }
+
+    @GetMapping("/team/{teamId}")
+    public ResponseEntity<List<TaskResponse>> getTasksByTeam(@PathVariable String teamId) {
+        return ResponseEntity.ok(taskService.getTasksByTeam(teamId));
+    }
+
+
 }
